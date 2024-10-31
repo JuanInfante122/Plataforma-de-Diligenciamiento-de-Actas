@@ -1,15 +1,39 @@
 // src/components/FormularioDocumentacion.jsx
-import React, { useContext, useRef } from 'react';
+import axios from 'axios';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
 import { AppContext } from '../context/AppContext';
-import axios from 'axios';
 
-
-const FormularioDocumentacion = () => {
+const FormularioDocumentacion = ({ rol, aprendizID }) => {
   const { formData, setFormData } = useContext(AppContext);
   const sigCanvasAprendiz = useRef(null);
   const sigCanvasJefe = useRef(null);
   const sigCanvasInstructor = useRef(null);
+  const [documentoCargado, setDocumentoCargado] = useState(false); // Estado para verificar si hay documento guardado
+
+  useEffect(() => {
+    const cargarDatosGuardados = async () => {
+      try {
+        // Llamada a la API para obtener los datos del aprendiz específico por ID
+        const response = await axios.get(`http://localhost:5000/documento/${aprendizID}`);
+        if (response.data) {
+          setFormData(response.data);
+          setDocumentoCargado(true); // Documento cargado con éxito
+        } else {
+          setFormData({}); // Si no hay datos, inicializar en blanco
+          setDocumentoCargado(false);
+        }
+      } catch (error) {
+        if (error.response && error.response.status === 404) {
+          setFormData({}); // Si no hay documento guardado, inicializa vacío
+          setDocumentoCargado(false);
+        } else {
+          console.error('Error al cargar datos guardados:', error);
+        }
+      }
+    };
+    cargarDatosGuardados();
+  }, [setFormData, aprendizID]);
 
   const handleSignatureSave = (sigCanvasRef, fieldName) => {
     if (sigCanvasRef.current) {
@@ -26,6 +50,7 @@ const FormularioDocumentacion = () => {
       sigCanvasRef.current.clear();
     }
   };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
@@ -38,155 +63,112 @@ const FormularioDocumentacion = () => {
     try {
       await axios.post('http://localhost:5000/guardar', formData);
       alert('Datos guardados y PDF enviado por correo.');
+      setDocumentoCargado(true); // Después de guardar, el documento ya está disponible
     } catch (error) {
       console.error('Error al guardar y enviar el PDF:', error);
     }
   };
 
   return (
-    <div className="w-1/2 p-6 bg-white shadow-lg rounded-lg overflow-y-auto h-screen">
+    <div className="w-full max-w-2xl p-6 bg-white shadow-lg rounded-lg overflow-y-auto">
+      <h2 className="text-2xl font-bold mb-6">Formulario de Planeación y Evaluación de Etapa Productiva</h2>
 
-        <h2 className="text-2xl font-bold mb-6">Formulario de Planeación y Evaluación de Etapa Productiva</h2>
+      {/* Mostrar mensaje si no hay documento guardado y el rol es Jefe o Instructor */}
+      {!documentoCargado && (rol === 'Jefe' || rol === 'Instructor') && (
+        <p className="text-gray-600 mb-4">No hay datos disponibles para visualizar. El Aprendiz debe completar el formulario.</p>
+      )}
 
-    {/* Información General */}
-    <section className="mb-4">
-        <h3 className="text-lg font-semibold mb-2">1. Información General</h3>
-        
-        <label className="block mb-2">
-          Regional:
-          <input
-            type="text"
-            name="regional"
-            value={formData.regional}
-            onChange={handleChange}
-            className="block w-full p-2 border rounded"
-          />
-        </label>
-        <label className="block mb-2">
-          Centro de Formación:
-          <input
-            type="text"
-            name="centroFormacion"
-            value={formData.centroFormacion}
-            onChange={handleChange}
-            className="block w-full p-2 border rounded"
-          />
-        </label>
-        <label className="block mb-2">
-          Programa de Formación:
-          <input
-            type="text"
-            name="programaFormacion"
-            value={formData.programaFormacion}
-            onChange={handleChange}
-            className="block w-full p-2 border rounded"
-          />
-        </label>
-        <label className="block mb-2">
-          No. Ficha:
-          <input
-            type="text"
-            name="noFicha"
-            value={formData.noFicha}
-            onChange={handleChange}
-            className="block w-full p-2 border rounded"
-          />
-        </label>
+      {/* Información General - visible para Aprendiz y siempre editable */}
+      {(rol === 'Aprendiz' || documentoCargado) && (
+        <section className="mb-4">
+          <h3 className="text-lg font-semibold mb-2">1. Información General</h3>
+          <label className="block mb-2">
+            Regional:
+            <input
+              type="text"
+              name="regional"
+              value={formData.regional || ''}
+              onChange={handleChange}
+              className="block w-full p-2 border rounded"
+              disabled={rol !== 'Aprendiz'}
+            />
+          </label>
+          <label className="block mb-2">
+            Centro de Formación:
+            <input
+              type="text"
+              name="centroFormacion"
+              value={formData.centroFormacion || ''}
+              onChange={handleChange}
+              className="block w-full p-2 border rounded"
+              disabled={rol !== 'Aprendiz'}
+            />
+          </label>
+          {/* Agrega más campos según sea necesario */}
+        </section>
+      )}
 
-        <label className="block mb-2">
-          Modalidad de Formación:
-          <select
-            name="modalidadFormacion"
-            value={formData.modalidadFormacion}
-            onChange={handleChange}
-            className="block w-full p-2 border rounded"
-          >
-            <option value="">Seleccionar</option>
-            <option value="Presencial">Presencial</option>
-            <option value="Virtual">Virtual</option>
-            <option value="Distancia">A Distancia</option>
-          </select>
-        </label>
-    </section>
-    {/* Información del Aprendiz */}
-    <section className="mb-4">
-        <h3 className="text-lg font-semibold mb-2">Datos del Aprendiz</h3>
-        
-        <label className="block mb-2">
-          Nombre Completo:
-          <input
-            type="text"
-            name="nombreAprendiz"
-            value={formData.nombreAprendiz}
-            onChange={handleChange}
-            className="block w-full p-2 border rounded"
-          />
-        </label>
+      {/* Información del Aprendiz - siempre visible para Aprendiz y editable */}
+      {(rol === 'Aprendiz' || documentoCargado) && (
+        <section className="mb-4">
+          <h3 className="text-lg font-semibold mb-2">Datos del Aprendiz</h3>
+          <label className="block mb-2">
+            Nombre Completo:
+            <input
+              type="text"
+              name="nombreAprendiz"
+              value={formData.nombreAprendiz || ''}
+              onChange={handleChange}
+              className="block w-full p-2 border rounded"
+              disabled={rol !== 'Aprendiz'}
+            />
+          </label>
+          {/* Otros campos adicionales */}
+        </section>
+      )}
 
-        <label className="block mb-2">
-          Tipo de Documento:
-          <select
-            name="tipoDocumento"
-            value={formData.tipoDocumento}
-            onChange={handleChange}
-            className="block w-full p-2 border rounded"
-          >
-            <option value="">Seleccionar</option>
-            <option value="NUIP">NUIP</option>
-            <option value="Tarjeta de Identidad">Tarjeta de Identidad</option>
-            <option value="Cédula de Ciudadanía">Cédula de Ciudadanía</option>
-            <option value="Cédula Digital">Cédula Digital</option>
-            <option value="Cédula de Extranjería">Cédula de Extranjería</option>
-            <option value="Permiso Especial Permanente">Permiso Especial Permanente</option>
-          </select>
-        </label>
-
-        <label className="block mb-2">
-          Número de Identificación:
-          <input
-            type="text"
-            name="noIdentificacion"
-            value={formData.noIdentificacion}
-            onChange={handleChange}
-            className="block w-full p-2 border rounded"
-          />
-        </label>
-        
-        {/* Añadir más campos... */}
-      </section>
       {/* Sección Firma Aprendiz */}
-      <section className="mb-8">
-        <h3 className="text-lg font-semibold mb-4">Firma del Aprendiz</h3>
-        <SignatureCanvas ref={sigCanvasAprendiz} penColor="black" canvasProps={{ width: 300, height: 100, className: 'border border-gray-400' }} />
-        <div className="mt-2">
-          <button onClick={() => handleSignatureSave(sigCanvasAprendiz, 'firmaAprendizURL')} className="px-4 py-2 bg-blue-500 text-white rounded mr-2">Guardar Firma</button>
-          <button onClick={() => clearSignature(sigCanvasAprendiz)} className="px-4 py-2 bg-red-500 text-white rounded">Borrar</button>
-        </div>
-      </section>
+      {rol === 'Aprendiz' && (
+        <section className="mb-8">
+          <h3 className="text-lg font-semibold mb-4">Firma del Aprendiz</h3>
+          <SignatureCanvas ref={sigCanvasAprendiz} penColor="black" canvasProps={{ width: 300, height: 100, className: 'border border-gray-400' }} />
+          <div className="mt-2">
+            <button onClick={() => handleSignatureSave(sigCanvasAprendiz, 'firmaAprendizURL')} className="px-4 py-2 bg-blue-500 text-white rounded mr-2">Guardar Firma</button>
+            <button onClick={() => clearSignature(sigCanvasAprendiz)} className="px-4 py-2 bg-red-500 text-white rounded">Borrar</button>
+          </div>
+        </section>
+      )}
 
       {/* Sección Firma Jefe */}
-      <section className="mb-8">
-        <h3 className="text-lg font-semibold mb-4">Firma del Jefe Inmediato</h3>
-        <SignatureCanvas ref={sigCanvasJefe} penColor="black" canvasProps={{ width: 300, height: 100, className: 'border border-gray-400' }} />
-        <div className="mt-2">
-          <button onClick={() => handleSignatureSave(sigCanvasJefe, 'firmaJefeURL')} className="px-4 py-2 bg-blue-500 text-white rounded mr-2">Guardar Firma</button>
-          <button onClick={() => clearSignature(sigCanvasJefe)} className="px-4 py-2 bg-red-500 text-white rounded">Borrar</button>
-        </div>
-      </section>
+      {rol === 'Jefe' && (
+        <section className="mb-8">
+          <h3 className="text-lg font-semibold mb-4">Firma del Jefe Inmediato</h3>
+          <SignatureCanvas ref={sigCanvasJefe} penColor="black" canvasProps={{ width: 300, height: 100, className: 'border border-gray-400' }} />
+          <div className="mt-2">
+            <button onClick={() => handleSignatureSave(sigCanvasJefe, 'firmaJefeURL')} className="px-4 py-2 bg-blue-500 text-white rounded mr-2">Guardar Firma</button>
+            <button onClick={() => clearSignature(sigCanvasJefe)} className="px-4 py-2 bg-red-500 text-white rounded">Borrar</button>
+          </div>
+        </section>
+      )}
 
       {/* Sección Firma Instructor */}
-      <section className="mb-8">
-        <h3 className="text-lg font-semibold mb-4">Firma del Instructor</h3>
-        <SignatureCanvas ref={sigCanvasInstructor} penColor="black" canvasProps={{ width: 300, height: 100, className: 'border border-gray-400' }} />
-        <div className="mt-2">
-          <button onClick={() => handleSignatureSave(sigCanvasInstructor, 'firmaInstructorURL')} className="px-4 py-2 bg-blue-500 text-white rounded mr-2">Guardar Firma</button>
-          <button onClick={() => clearSignature(sigCanvasInstructor)} className="px-4 py-2 bg-red-500 text-white rounded">Borrar</button>
-        </div>
+      {rol === 'Instructor' && (
+        <section className="mb-8">
+          <h3 className="text-lg font-semibold mb-4">Firma del Instructor</h3>
+          <SignatureCanvas ref={sigCanvasInstructor} penColor="black" canvasProps={{ width: 300, height: 100, className: 'border border-gray-400' }} />
+          <div className="mt-2">
+            <button onClick={() => handleSignatureSave(sigCanvasInstructor, 'firmaInstructorURL')} className="px-4 py-2 bg-blue-500 text-white rounded mr-2">Guardar Firma</button>
+            <button onClick={() => clearSignature(sigCanvasInstructor)} className="px-4 py-2 bg-red-500 text-white rounded">Borrar</button>
+          </div>
+        </section>
+      )}
 
+      {/* Guardar y Enviar PDF */}
+      {rol === 'Aprendiz' && (
         <button onClick={handleSave} className="px-4 py-2 bg-green-500 text-white rounded mt-4">
-            Guardar y Enviar PDF
+          Guardar y Enviar PDF
         </button>
-      </section>
+      )}
     </div>
   );
 };

@@ -5,9 +5,16 @@ export const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
   const [formData, setFormData] = useState({
-    regional: '', centroFormacion: '', programaFormacion: '', modalidadFormacion: '',
-    nombreCompleto: '', tipoDocumento: '', noIdentificacion: '', telefono: '', emailPersonal: '',
-    emailInstitucional: '', alternativaEtapa: '', firmaAprendizURL: '', firmaJefeURL: '', firmaInstructorURL: ''
+    regional: '', 
+    centroFormacion: '', 
+    programaFormacion: '', 
+    modalidadFormacion: '', 
+    nombreAprendiz: '', 
+    tipoDocumento: '', 
+    noIdentificacion: '', 
+    firmaAprendizURL: '', 
+    firmaJefeURL: '', 
+    firmaInstructorURL: ''
   });
 
   return (
