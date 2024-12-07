@@ -4,11 +4,11 @@
 
 La **Plataforma de Diligenciamiento de Actas** es un sistema desarrollado para el Servicio Nacional de Aprendizaje (SENA) que facilita la gestión y validación de documentos para la etapa productiva de los aprendices. La plataforma permite a los aprendices e instructores diligenciar actas en línea, y a las empresas firmarlas digitalmente. Una vez completados y validados los documentos, se envían automáticamente por correo electrónico a todas las partes involucradas.
 
-## Tecnologías Utilizadas
+## Ejecutar Proyecto
 
-- **Frontend**: HTML, CSS
-- **Backend**: PHP
-- **Base de Datos**: MySQL
+- Ejecutar 'npm install' para instalar las dependencias.
+- - Ejecutar el servidor backend con 'node server.js'.
+  - - Ejecutar el frontend con 'npm start'.
 
 ## Características
 
