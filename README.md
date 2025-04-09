@@ -15,8 +15,8 @@ Antes de comenzar, asegúrate de tener instalado:
 ### 1. Clonar el Repositorio
 
 ```bash
-git clone https://github.com/tu-usuario/documentacion-sena.git
-cd documentacion-sena
+git clone https://github.com/JuanInfante122/Plataforma-de-Diligenciamiento-de-Actas.git
+cd Plataforma-de-Diligenciamiento-de-Actas
 ```
 
 ### 2. Configuración de la Base de Datos
@@ -216,19 +216,6 @@ npm test
    - Elimina node_modules y package-lock.json
    - Ejecuta `npm install` nuevamente
 
-## 📄 Licencia
-
-Este proyecto está bajo la Licencia MIT - mira el archivo [LICENSE.md](LICENSE.md) para detalles
-
-## 👥 Contribuir
-
-1. Haz un Fork del proyecto
-2. Crea tu rama de características (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
-
-## 📞 Soporte
 
 Si tienes alguna duda o problema, puedes:
 - Abrir un issue en GitHub
