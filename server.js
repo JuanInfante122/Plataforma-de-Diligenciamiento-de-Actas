@@ -6,6 +6,9 @@ const nodemailer = require('nodemailer');
 const { PDFDocument } = require('pdf-lib');
 require('dotenv').config();
 
+const { enviarCorreo, verificarConexion } = require('./src/config/emailConfig');
+const { plantillaDocumentoNuevo } = require('./src/utils/emailTemplates');
+
 const app = express();
 
 // Middleware
@@ -711,9 +714,8 @@ app.get('/documento-detalle/:documentoId', async (req, res) => {
 
 // Ruta para guardar documento
 app.post('/guardar-documento', async (req, res) => {
-  console.log('Recibiendo solicitud para guardar documento:', req.body); // Debug log
-  
   const { plantilla_id, aprendiz_id, contenido, firma } = req.body;
+  console.log('Recibiendo solicitud para guardar documento:', req.body);
 
   if (!plantilla_id || !aprendiz_id || !contenido) {
     return res.status(400).json({
@@ -723,31 +725,37 @@ app.post('/guardar-documento', async (req, res) => {
   }
 
   const connection = await pool.getConnection();
+  
   try {
     await connection.beginTransaction();
 
-    // Obtener la ficha del aprendiz
-    const [fichas] = await connection.query(
-      `SELECT f.id 
-       FROM fichas f 
-       JOIN aprendices_ficha af ON f.id = af.ficha_id 
-       WHERE af.aprendiz_id = ? AND af.estado = 'ACTIVO'
-       LIMIT 1`,
-      [aprendiz_id]
-    );
+    // Primero obtener la ficha del aprendiz
+    const [fichaResult] = await connection.query(`
+      SELECT f.id as ficha_id
+      FROM fichas f
+      JOIN aprendices_ficha af ON f.id = af.ficha_id
+      WHERE af.aprendiz_id = ?
+      AND af.estado = 'ACTIVO'
+      LIMIT 1
+    `, [aprendiz_id]);
 
-    if (fichas.length === 0) {
+    if (fichaResult.length === 0) {
       throw new Error('No se encontró una ficha activa para el aprendiz');
     }
 
-    const ficha_id = fichas[0].id;
+    const ficha_id = fichaResult[0].ficha_id;
 
-    // Insertar documento
-    const [result] = await connection.query(
-      `INSERT INTO documentos (plantilla_id, ficha_id, aprendiz_id, contenido, estado)
-       VALUES (?, ?, ?, ?, 'ENVIADO')`,
-      [plantilla_id, ficha_id, aprendiz_id, JSON.stringify(contenido)]
-    );
+    // Guardar el documento
+    const [result] = await connection.query(`
+      INSERT INTO documentos (
+        plantilla_id,
+        aprendiz_id,
+        ficha_id,
+        contenido,
+        estado,
+        created_at
+      ) VALUES (?, ?, ?, ?, 'ENVIADO', NOW())
+    `, [plantilla_id, aprendiz_id, ficha_id, JSON.stringify(contenido)]);
 
     const documento_id = result.insertId;
 
@@ -760,27 +768,83 @@ app.post('/guardar-documento', async (req, res) => {
       );
     }
 
-    // Obtener instructores de la ficha
-    const [instructores] = await connection.query(`
-      SELECT DISTINCT u.id 
-      FROM usuarios u
-      JOIN fichas f ON f.instructor_id = u.id
-      WHERE f.id = ? AND u.estado = 'ACTIVO'`, 
-      [fichaId]);
+    // Obtener información del instructor y jefe
+    const [destinatarios] = await connection.query(`
+      SELECT 
+        i.id as instructor_id,
+        i.email as instructor_email,
+        i.nombres as instructor_nombres,
+        j.email as jefe_email,
+        j.nombres as jefe_nombres,
+        f.numero as numero_ficha,
+        pf.nombre as programa,
+        CONCAT(a.nombres, ' ', a.apellidos) as nombre_aprendiz,
+        pd.titulo as tipo_documento
+      FROM fichas f
+      JOIN usuarios i ON f.instructor_id = i.id
+      JOIN usuarios j ON j.rol_id = 2
+      JOIN usuarios a ON a.id = ?
+      JOIN programas_formacion pf ON f.programa_id = pf.id
+      JOIN plantillas_documento pd ON pd.id = ?
+      WHERE f.id = ?
+    `, [aprendiz_id, plantilla_id, ficha_id]);
 
-    for (const instructor of instructores) {
-      await crearNotificacion(connection, {
-        usuario_id: instructor.id,
-        tipo: 'DOCUMENTO_NUEVO',
-        titulo: 'Nuevo documento para revisar',
-        mensaje: `El aprendiz ${nombreAprendiz} ha enviado un nuevo documento para revisión`,
-        documento_id: documentoId
-      });
+    if (destinatarios.length > 0) {
+      const info = destinatarios[0];
+      
+      // Crear notificación para el instructor
+      await connection.query(`
+        INSERT INTO notificaciones (
+          usuario_id,
+          tipo,
+          titulo,
+          mensaje,
+          documento_id,
+          created_at
+        ) VALUES (?, 'DOCUMENTO_NUEVO', 'Nuevo documento para revisar', ?, ?, NOW())
+      `, [
+        info.instructor_id,
+        `El aprendiz ${info.nombre_aprendiz} ha enviado un nuevo documento para revisión`,
+        documento_id
+      ]);
+
+      // Enviar correos si está configurado
+      if (destinatarios.length > 0) {
+        const info = destinatarios[0];
+          try {
+            console.log('Enviando correo al instructor:', info.instructor_email);
+            await enviarCorreo({
+              to: info.instructor_email,
+              subject: 'Nuevo Documento para Revisión',
+              html: plantillaDocumentoNuevo({
+                nombreAprendiz: info.nombre_aprendiz,
+                tipoDocumento: info.tipo_documento,
+                numeroFicha: info.numero_ficha,
+                programa: info.programa
+              })
+            });
+    
+            console.log('Enviando correo al jefe:', info.jefe_email);
+            await enviarCorreo({
+              to: info.jefe_email,
+              subject: 'Nuevo Documento para Revisión',
+              html: plantillaDocumentoNuevo({
+                nombreAprendiz: info.nombre_aprendiz,
+                tipoDocumento: info.tipo_documento,
+                numeroFicha: info.numero_ficha,
+                programa: info.programa
+              })
+          });
+        } catch (emailError) {
+          console.error('Error al enviar correos:', emailError);
+          // No detenemos la transacción si falla el envío de correos
+        }
+      }
     }
 
     await connection.commit();
     
-    console.log('Documento guardado exitosamente:', documento_id); // Debug log
+    console.log('Documento guardado exitosamente:', documento_id);
     
     res.json({ 
       success: true, 
@@ -791,8 +855,8 @@ app.post('/guardar-documento', async (req, res) => {
     await connection.rollback();
     console.error('Error al guardar documento:', error);
     res.status(500).json({ 
-      success: false,
-      message: error.message || 'Error al guardar documento'
+      success: false, 
+      message: error.message || 'Error al guardar el documento'
     });
   } finally {
     connection.release();
