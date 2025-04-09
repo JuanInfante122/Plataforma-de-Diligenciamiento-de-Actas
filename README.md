@@ -1,110 +1,236 @@
-# Plataforma de Diligenciamiento de Actas
+# Sistema de Gestión de Documentación SENA
 
-## Descripción
+Sistema web para la gestión y seguimiento de documentación entre aprendices, instructores y jefes del SENA.
 
-La **Plataforma de Diligenciamiento de Actas** es un sistema desarrollado para el Servicio Nacional de Aprendizaje (SENA) que facilita la gestión y validación de documentos para la etapa productiva de los aprendices. La plataforma permite a los aprendices e instructores diligenciar actas en línea, y a las empresas firmarlas digitalmente. Una vez completados y validados los documentos, se envían automáticamente por correo electrónico a todas las partes involucradas.
+## 📋 Requisitos Previos
 
-## Ejecutar Proyecto
+Antes de comenzar, asegúrate de tener instalado:
 
-- Ejecutar 'npm install' para instalar las dependencias.
-- - Ejecutar el servidor backend con 'node server.js'.
-  - - Ejecutar el frontend con 'npm start'.
+- Node.js (v14 o superior)
+- MySQL (v8.0 o superior)
+- Git
 
-## Características
+## 🚀 Instalación
 
-- **Diligenciamiento de Actas**:
-  - **Acta del Aprendiz**: Diligenciada por el aprendiz.
-  - **Acta del Instructor**: Diligenciada por el instructor.
-- **Firma Digital**:
-  - Las empresas pueden firmar digitalmente los documentos.
-- **Validación de Firma**:
-  - Envío de validación por correo electrónico a la empresa para verificar la firma.
-- **Notificaciones**:
-  - Envío automático de los documentos firmados a la empresa, el aprendiz y el instructor.
+### 1. Clonar el Repositorio
 
-## Requisitos
+```bash
+git clone https://github.com/tu-usuario/documentacion-sena.git
+cd documentacion-sena
+```
 
-- **Servidor Web**: Apache o similar
-- **PHP**: Versión 7.4 o superior
-- **Base de Datos**: MySQL 5.7 o superior
-- **Navegador**: Compatible con los navegadores más comunes (Chrome, Firefox, Edge)
+### 2. Configuración de la Base de Datos
 
-## Instalación
+1. Accede a MySQL:
+```bash
+mysql -u root -p
+```
 
-### Configurar el Entorno
+2. Crea la base de datos:
+```sql
+CREATE DATABASE documentacion;
+USE documentacion;
+```
 
-1. Copia el archivo `config.example.php` a `config.php` y ajusta las configuraciones de la base de datos.
-2. Configura el servidor web para apuntar a la carpeta del proyecto.
+3. Ejecuta el script de la base de datos:
+```bash
+mysql -u root -p documentacion < database/schema.sql
+```
 
-### Importar la Base de Datos
+### 3. Configuración del Backend
 
-- Importa el archivo `database.sql` a tu base de datos MySQL.
+1. Navega al directorio del servidor:
+```bash
+cd server
+```
 
-### Instalar Dependencias
+2. Instala las dependencias:
+```bash
+npm install
+```
 
-- Asegúrate de tener todas las dependencias necesarias instaladas en tu servidor.
+3. Crea el archivo de variables de entorno:
+```bash
+cp .env.example .env
+```
 
-## Uso
+4. Configura las variables de entorno en el archivo `.env`:
+```env
+# Database Configuration
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=tu_contraseña
+DB_NAME=documentacion
 
-### Acceder al Sistema
+# Server Configuration
+PORT=5000
+NODE_ENV=development
 
-- Navega a la URL de tu servidor para acceder a la plataforma.
+# JWT Configuration
+JWT_SECRET=tu_secreto_jwt
 
-### Diligenciar Actas
+# Email Configuration
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=tu_email@gmail.com
+SMTP_PASS=tu_contraseña
+SMTP_FROM=no-reply@tusistema.com
+```
 
-- Los aprendices e instructores pueden completar los formularios en línea.
+5. Inicia el servidor:
+```bash
+npm run dev
+```
 
-### Firma Digital
+### 4. Configuración del Frontend
 
-- Las empresas pueden firmar los documentos digitalmente.
+1. Navega al directorio del cliente:
+```bash
+cd client
+```
 
-### Validación y Envío
+2. Instala las dependencias:
+```bash
+npm install
+```
 
-- El sistema enviará automáticamente las validaciones y los documentos firmados por correo electrónico.
+3. Crea el archivo de variables de entorno:
+```bash
+cp .env.example .env
+```
 
-## Diagrama de Entidades
+4. Configura las variables de entorno en el archivo `.env`:
+```env
+REACT_APP_API_URL=http://localhost:5000
+```
 
-A continuación, se muestran los diagramas de Entidades-Relación (ER) y Extendido (MER) para la estructura de la base de datos:
+5. Inicia la aplicación:
+```bash
+npm start
+```
 
-### Diagrama ER
+## 📁 Estructura del Proyecto
 
-![Diagrama ER](ruta/a/diagrama-er.png)
+```
+documentacion-sena/
+├── client/                 # Frontend (React)
+│   ├── public/
+│   └── src/
+│       ├── components/
+│       ├── pages/
+│       ├── context/
+│       └── utils/
+├── server/                 # Backend (Node.js)
+│   ├── config/
+│   ├── controllers/
+│   ├── models/
+│   └── routes/
+└── database/              # Scripts SQL
+    └── schema.sql
+```
 
-### Diagrama MER
+## 🔑 Roles y Accesos
 
-![Diagrama MER](ruta/a/diagrama-mer.png)
+El sistema maneja tres tipos de roles:
 
-## Cronograma
+1. **Aprendiz**
+   - Crear documentos
+   - Ver historial
+   - Gestionar perfil
 
-**Mes 1**:
-- Definición de requisitos y planificación.
-- Diseño del modelo de datos.
-- Configuración del entorno de desarrollo.
+2. **Instructor**
+   - Revisar documentos
+   - Gestionar aprendices
+   - Ver estadísticas
+   - Gestionar firma
 
-**Mes 2**:
-- Desarrollo del frontend y backend.
-- Integración de la base de datos.
-- Implementación de la funcionalidad de firma digital y validación.
+3. **Jefe**
+   - Aprobar documentos
+   - Generar reportes
+   - Ver estadísticas globales
+   - Gestionar firma
 
-**Mes 3**:
-- Pruebas y corrección de errores.
-- Despliegue en el servidor de producción.
-- Documentación y capacitación.
+## 🛠️ Tecnologías Utilizadas
 
-## Contribuciones
+- **Frontend:**
+  - React
+  - React Router
+  - Tailwind CSS
+  - Chart.js
+  - Axios
 
-Las contribuciones son bienvenidas. Si deseas contribuir al proyecto, por favor sigue estos pasos:
+- **Backend:**
+  - Node.js
+  - Express
+  - MySQL2
+  - PDF-lib
+  - Nodemailer
 
-1. Haz un fork del repositorio.
-2. Crea una nueva rama para tu funcionalidad o corrección.
-3. Realiza tus cambios y haz un commit.
-4. Envía un pull request describiendo tus cambios.
+- **Base de Datos:**
+  - MySQL
 
-## Contacto
+## 📝 Comandos Útiles
 
-Para cualquier consulta o soporte, puedes contactar a Juan Manuel en [tu-email@example.com](mailto:tu-email@example.com).
+### Backend
 
----
+```bash
+# Iniciar en modo desarrollo
+npm run dev
 
-**Confidencialidad**: Este documento y el código asociado son propiedad del Servicio Nacional de Aprendizaje (SENA) y están sujetos a condiciones de confidencialidad.
+# Iniciar en modo producción
+npm start
 
+# Ejecutar migraciones
+npm run migrate
+
+# Ejecutar seeds
+npm run seed
+```
+
+### Frontend
+
+```bash
+# Iniciar en modo desarrollo
+npm start
+
+# Crear build de producción
+npm run build
+
+# Ejecutar tests
+npm test
+```
+
+## 🔧 Solución de Problemas Comunes
+
+1. **Error de conexión a la base de datos**
+   - Verifica que MySQL esté corriendo
+   - Confirma las credenciales en el archivo .env
+   - Asegúrate de que la base de datos existe
+
+2. **Error al iniciar el frontend**
+   - Verifica que el backend esté corriendo
+   - Confirma la URL del API en el .env
+   - Limpia la caché: `npm cache clean --force`
+
+3. **Error en las dependencias**
+   - Elimina node_modules y package-lock.json
+   - Ejecuta `npm install` nuevamente
+
+## 📄 Licencia
+
+Este proyecto está bajo la Licencia MIT - mira el archivo [LICENSE.md](LICENSE.md) para detalles
+
+## 👥 Contribuir
+
+1. Haz un Fork del proyecto
+2. Crea tu rama de características (`git checkout -b feature/AmazingFeature`)
+3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
+4. Push a la rama (`git push origin feature/AmazingFeature`)
+5. Abre un Pull Request
+
+## 📞 Soporte
+
+Si tienes alguna duda o problema, puedes:
+- Abrir un issue en GitHub
+- Contactar al equipo de desarrollo
+- Consultar la documentación técnica
